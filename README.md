@@ -192,44 +192,6 @@ R-squared: 0.906
 
 We can see that the lasso regression does change the coefficients of some features to zero. And surprisingly, this is just the same result as the stepwise forward feature selection.
 
-### Decision tree regression
-Starting by performing a 4:1 Train-test Split of Dataset. Then we go ahead and build the decision tree regression model.
-
-![image](https://github.com/anandr07/DATS6101-P2-Movie-Revenue-Prediction/assets/66896800/86d76568-ae3b-4595-9a2a-adb6837f6f7a)
-
-![image](https://github.com/anandr07/DATS6101-P2-Movie-Revenue-Prediction/assets/66896800/52f7d823-04ec-4c7c-b504-f9ada8d543c2)
-
-#### Summary for dt_model0
-The regression tree was built using the specified formula with “Trailer_Likes” as the primary variable and using all present features. The tree’s complexity is controlled by the complexity parameter, and the cross-validated error is used to assess the model’s performance. The reported RMSE of 6.419^{6} gives an estimate of the average prediction error on the training data. The CP values suggests that further pruning beyond a certain point (determined by the complexity parameter) may not significantly improve model performance.
-
-![image](https://github.com/anandr07/DATS6101-P2-Movie-Revenue-Prediction/assets/66896800/210ce53a-47c8-46db-bf32-da97f6b29d70)
-
-#### Summary for dt_model1
-The model1 was created using significant factors. The model1 analysis reveals valuable insights into the factors influencing revenue in the examined dataset. The constructed regression tree, utilizing variables such as Budget, Vote_Count, Trailer_Views, and Trailer_Likes, prioritizes Trailer_Likes as the primary determinant of revenue. The tree’s structure, with a depth of 6 nodes, provides a detailed segmentation of the dataset, emphasizing the significance of Trailer_Likes in predicting revenue variations.
-
-Node analysis showcases the mean revenue and mean squared error (MSE) at each node, offering a granular understanding of the model’s predictions. The root mean squared error (RMSE) of 6.419^{6} provides a measure of the overall model accuracy.
-
-Variable importance ranking underscores the dominance of Trailer_Likes, followed by Trailer_Views, Vote_Count, and Budget. This suggests that while all variables contribute to revenue prediction, Trailer_Likes plays a pivotal role.
-
-The model interpretation underscores the actionable insight that increasing Trailer_Likes is crucial for revenue enhancement. Lower Trailer_Likes correspond to diminished predicted revenue, emphasizing the marketing and promotional efforts’ potential impact on revenue generation.
-
-![image](https://github.com/anandr07/DATS6101-P2-Movie-Revenue-Prediction/assets/66896800/58b1ce5c-a633-4bdb-8d3e-3691886a32de)
-
-#### Summary for dt_model2
-The regression tree analysis was conducted on the “Revenue” variable using the predictors “Budget,” “Vote_Count,” “Trailer_Views,” and “Trailer_Likes” with a maximum depth limited to 1. The key findings are as follows:
-
-The root node error for the model is 3e+14, based on 8528 observations. The tree structure indicates that only the variable “Trailer_Likes” is utilized in the construction of the tree. The primary split occurs at a value of 6120000 for “Trailer_Likes.”
-
-The resulting tree consists of two terminal nodes (Node 2 and Node 3). Node 2 represents observations with lower Trailer_Likes values, yielding a mean revenue of 6.26e+06 and a relatively lower MSE. On the other hand, Node 3, with higher Trailer_Likes values, has a mean revenue of 3.74e+07 and a higher MSE.
-
-The overall Root Mean Squared Error (RMSE) of the model is 1.242^{7}.
-
-The variable importance ranking suggests that “Trailer_Likes” is the most influential predictor, followed by “Trailer_Views,” “Vote_Count,” and “Budget.”
-
-![image](https://github.com/anandr07/DATS6101-P2-Movie-Revenue-Prediction/assets/66896800/3be9a695-b5c9-469b-a24d-46115c1bf2d5)
-
-A similar tree was built with max_depth=2 giving bad results.
-
 
 ## Results and Conclusions:
 The project aimed to address the complex and dynamic nature of the movie industry by developing a regression model to estimate movie revenue. The data analysis and model building process involved exploratory data analysis, data cleaning, and feature selection.
