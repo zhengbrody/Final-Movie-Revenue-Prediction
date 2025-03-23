@@ -4,12 +4,12 @@ In this project we are building a Prediction Model to predict Revenue generated 
 
 ## Data Set can be found here : 
 
-https://www.imdb.com/list/ls026411399 (A director billboard)
-https://www.the-numbers.com/movies/release-schedule (For future movie release)
-https://developer.imdb.com/non-commercial-datasets/ (Official data provided by imdb)
-https://arxiv.org/pdf/2405.11651v1
-https://github.com/vikranth3140/movie-revenue-prediction
-https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies
+-https://www.imdb.com/list/ls026411399 (A director billboard)
+-https://www.the-numbers.com/movies/release-schedule (For future movie release)
+-https://developer.imdb.com/non-commercial-datasets/ (Official data provided by imdb)
+-https://arxiv.org/pdf/2405.11651v1
+-https://github.com/vikranth3140/movie-revenue-prediction
+-https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies
 
 
 ## Detailed Problem Statement: 
