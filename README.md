@@ -230,15 +230,6 @@ The variable importance ranking suggests that “Trailer_Likes” is the most in
 
 A similar tree was built with max_depth=2 giving bad results.
 
-#### RF Feature Importance
-
-![image](https://github.com/anandr07/DATS6101-P2-Movie-Revenue-Prediction/assets/66896800/5bfb0051-2e2c-4a66-8dde-6a2a9ecfb435)
-
-The random forest regression analysis was conducted with the formula Revenue ~ Budget + Vote_Count + Trailer_Views + Trailer_Likes, utilizing 500 trees in the forest. The model’s type is set to regression, and it tried one variable at each split. The mean of squared residuals, a measure of prediction error, is 3.07e+13, indicating the average squared difference between predicted and actual values. Additionally, the random forest explains approximately 90% of the variance in the Revenue variable, showcasing its substantial predictive power.
-
-The Root Mean Squared Error (RMSE) for the random forest model is 5.48^{6}, which represents the average difference between the predicted and actual revenue values. A lower RMSE indicates a more accurate model. In this case, the relatively low RMSE suggests that the random forest model provides a good fit to the training data.
-
-The utilization of a random forest, which combines predictions from multiple decision trees, often results in a robust and accurate predictive model. The % Var explained value of 90 suggests that the model effectively captures the underlying patterns in the data, demonstrating a high level of explanatory capability. This performance makes the random forest a promising tool for predicting Revenue based on the provided predictor variables. Overall, the random forest regression model appears to be a strong and reliable approach for predicting Revenue, providing valuable insights for decision-making in scenarios involving budget, vote count, trailer views, and trailer likes.
 
 ## Results and Conclusions:
 The project aimed to address the complex and dynamic nature of the movie industry by developing a regression model to estimate movie revenue. The data analysis and model building process involved exploratory data analysis, data cleaning, and feature selection.
