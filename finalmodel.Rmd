@@ -1,0 +1,411 @@
+---
+title: "referencemodel"
+author: "zheng dong"
+date: "2025-02-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = F, results = "hide", message = F, echo = F)
+options(scientific=T, digits = 3) 
+```
+
+```{r init, include=FALSE}
+# If you are missing any of the required packages, please install them first:
+# install.packages(c("rmdformats","kableExtra","corrplot","GGally","caTools",
+#                    "Metrics","glmnet","rpart.plot","tidymodels","caret",
+#                    "randomForest","MASS","car","dplyr","ggplot2"))
+
+knitr::opts_chunk$set(warning = FALSE, results = "hide", message = FALSE, echo = FALSE)
+options(scientific = TRUE, digits = 3)
+```
+
+## 1. Loading Libraries and Reading the Dataset
+```{r}
+library(dplyr)
+library(MASS)
+library(car)
+library(caTools)
+library(Metrics)
+library(glmnet)
+library(ggplot2)
+library(rpart)  # for decision trees
+library(rpart.plot)
+library(tidymodels)
+library(tidyr)
+library(caret)
+library(knitr)
+library(kableExtra)
+library(corrplot)
+library(GGally)
+library(randomForest)
+
+# Set the working directory (adjust as needed)
+setwd("/Users/zhengdong/Documents/GitHub/Movie-Revenue-Prediction")
+
+# Read in the CSV file. Make sure 'movies.csv' is in the working directory.
+movies <- read.csv("final_dataset.csv")
+
+movie  <- movies 
+
+```
+
+
+## 2. Preview of the Original Dataset
+
+```{r}
+# Display the first 5 rows to get a quick preview
+
+head(movie, 5) %>%
+  kable(caption = "The first 5 rows of the dataset") %>%
+  kable_styling(full_width = FALSE)
+```
+
+##3. Removing Unnecessary Columns and Renaming
+```{r}
+remove_cols <- c("actor_2_name", "actor_1_name")  
+movie <- movie[, !(names(movie) %in% remove_cols)]
+
+movie <- movie %>% rename(
+  Title = name,
+  Genre = genre,
+  Score = score,
+  Director = director,
+  Revenue = gross,
+  Budget = budget
+)
+
+movie$Budget <- as.numeric(movie$Budget)
+movie$Revenue <- as.numeric(movie$Revenue)
+movie$Score <- as.numeric(movie$Score)
+
+
+data_summary <- data.frame(
+  Column = names(movie),
+  Type = sapply(movie, class),
+  Missing_Values = colSums(is.na(movie))
+)
+
+data_summary %>%
+  kable(caption = "Dataset Summary (After Removing Some Columns)") %>%
+  kable_styling(full_width = FALSE)
+
+
+```
+
+## 4. Handling Missing Values and Cleaning Invalid Rows
+
+```{r}
+column_na_percentages <- colSums(is.na(movie)) / nrow(movie) * 100
+
+print("Rows in the dataset before dropping rows with NA values:")
+print(nrow(movie))
+
+movie <- movie[!is.na(movie$Revenue) & !is.na(movie$Budget), ]
+
+print("Rows in the dataset after dropping rows with NA values:")
+print(nrow(movie))
+
+print("Rows in the dataset before cleaning:")
+print(nrow(movie))
+
+movie <- movie[movie$Budget > 0, ]
+movie <- movie[movie$Revenue > 0, ]
+
+print("Rows in the dataset after cleaning:")
+print(nrow(movie))
+
+
+```
+
+
+## 5 Exploratory Data Analysis
+## 5.1 Box Plots for Numeric Columns
+```{r}
+selected_columns <- c("Budget", "Revenue", "Score")  
+
+selected_columns <- selected_columns[selected_columns %in% names(movie)]
+
+box_plots_list <- list()
+for (col in selected_columns) {
+  box_plot <- ggplot(movie, aes(y = get(col))) +
+    geom_boxplot(fill = "lightblue", color = "black", alpha = 0.7) +
+    labs(title = paste("Box Plot for", col), y = col) +
+    theme_minimal()
+  box_plots_list[[col]] <- box_plot
+}
+
+for (col in selected_columns) {
+  print(box_plots_list[[col]])
+}
+
+
+```
+
+##5.2 Scatter Plots for Selected Predictors
+```{r}
+available_numeric_cols <- names(movie)[sapply(movie, is.numeric)]
+
+predictors <- c("Budget", "Score") 
+predictors <- predictors[predictors %in% available_numeric_cols]
+
+scatter_plots <- lapply(predictors, function(var) {
+  ggplot(movie, aes_string(x = var, y = "Revenue", color = "Revenue")) +
+    geom_point() +
+    labs(title = paste("Scatter plot of", var, "vs. Revenue"),
+         x = var,
+         y = "Revenue",
+         color = "Revenue") +
+    theme_minimal()
+})
+scatter_plots
+
+
+```
+
+##5.3 Correlation Matrix and Pairwise Plots
+```{r}
+numeric_cols <- sapply(movie, is.numeric)
+numeric_vars_subset <- c("Revenue", "Budget", "Score")  
+
+numeric_vars_subset <- numeric_vars_subset[numeric_vars_subset %in% names(movie)]
+
+cor_matrix <- cor(movie[, numeric_cols])
+
+corrplot(cor_matrix, method = "color")
+
+if (length(numeric_vars_subset) > 1) {
+  ggpairs(movie[, numeric_vars_subset])
+} else {
+  print("Not enough numeric variables for pairwise plotting.")
+}
+
+```
+
+##6. Building the Initial Linear Models
+##6.1 Stepwise Forward Selection
+```{r}
+library(MASS)
+
+
+available_numeric_cols <- names(movie)[sapply(movie, is.numeric)]
+
+potential_predictors <- c("Budget", "Score", "Revenue")  
+potential_predictors <- potential_predictors[potential_predictors %in% available_numeric_cols]
+
+if (length(potential_predictors) > 1) {
+  formula_upper <- as.formula(paste("Revenue ~", paste(potential_predictors, collapse = " + ")))
+
+  initial_model <- lm(Revenue ~ 1, data = movie)
+  final_model <- stepAIC(initial_model, 
+                         direction = "forward",
+                         scope = list(lower = ~1, 
+                                      upper = formula_upper),
+                         data = movie)
+
+  summary(final_model)
+} else {
+  print("Not enough numeric predictors for stepwise selection.")
+}
+
+
+```
+##6.2 Fitting the Model Based on Stepwise Results
+```{r}
+selected_features <- c("Budget", "Score") 
+selected_features <- selected_features[selected_features %in% names(movie)] 
+
+if (length(selected_features) > 0) {
+  formula_lm <- as.formula(paste("Revenue ~", paste(selected_features, collapse = " + ")))
+
+  lm_model_usingFFS <- lm(formula_lm, data = movie)
+  summary(lm_model_usingFFS)
+
+  library(car)
+  influencePlot(lm_model_usingFFS)
+} else {
+  print("Not enough predictors available for linear regression.")
+}
+
+
+```
+
+##6.3 Removing Influential Points and Final Model
+```{r}
+rows_to_remove <- c(15996, 443, 96, 64, 1)
+rows_to_remove <- rows_to_remove[rows_to_remove %in% rownames(movie)] 
+movie <- movie[!(rownames(movie) %in% rows_to_remove), ]
+
+if (length(selected_features) > 0) {
+  lm_model <- lm(formula_lm, data = movie)
+  summary(lm_model)
+  influencePlot(lm_model)
+} else {
+  print("Not enough predictors available for final linear regression model.")
+}
+
+
+```
+
+
+##7. Checking Assumptions of Linear Regression
+```{r}
+if (exists("lm_model") && !is.null(lm_model)) {
+  
+  vif_values <- vif(lm_model)
+  print(vif_values)  
+  
+  avPlots(lm_model)
+  
+  par(mfrow = c(2, 2))  
+  plot(lm_model)
+  par(mfrow = c(1, 1))  
+
+} else {
+  print("Error: Linear model (lm_model) is not available.")
+}
+
+
+```
+
+##8. Train-Test Split and Model Evaluation
+
+```{r}
+set.seed(123)
+split <- sample.split(movie$Revenue, SplitRatio = 0.8)
+train_data <- subset(movie, split == TRUE)
+test_data  <- subset(movie, split == FALSE)
+
+valid_columns <- c("Trailer_Views", "Trailer_Likes", "Vote_Count", "Budget")
+valid_columns <- valid_columns[valid_columns %in% names(train_data)]  
+
+if (length(valid_columns) > 0) {
+    formula <- as.formula(paste("Revenue ~", paste(valid_columns, collapse = " + ")))
+    lm_model <- lm(formula, data = train_data)
+    
+    train_predictions <- predict(lm_model, newdata = train_data)
+    test_predictions  <- predict(lm_model, newdata = test_data)
+    
+    test_rmse  <- sqrt(mean((test_data$Revenue  - test_predictions)^2, na.rm = TRUE))
+    train_rmse <- sqrt(mean((train_data$Revenue - train_predictions)^2, na.rm = TRUE))
+    
+    cat("Model Variables:", paste(valid_columns, collapse = ", "), "\n")
+    cat("Test RMSE  :", round(test_rmse, 2), "\n")
+    cat("Train RMSE :", round(train_rmse, 2), "\n")
+    cat("Mean Revenue in dataset:", round(mean(movie$Revenue, na.rm=TRUE), 2), "\n")
+
+} else {
+    cat("Error: No valid predictor variables available for modeling.\n")
+}
+
+
+```
+##9. Ridge and Lasso Regression
+##9.1 Simple Ridge and Lasso with Lambda = 1
+```{r}
+
+valid_predictors <- c("Budget", "Score")  
+valid_predictors <- valid_predictors[valid_predictors %in% names(train_data)]
+
+if (length(valid_predictors) >= 2) {
+  X_train <- as.matrix(train_data[valid_predictors])
+  X_test  <- as.matrix(test_data[valid_predictors])
+  y_train <- train_data$Revenue
+  y_test  <- test_data$Revenue
+
+  ridge_model <- glmnet(X_train, y_train, alpha = 0, lambda = 1)
+  lasso_model <- glmnet(X_train, y_train, alpha = 1, lambda = 1)
+
+  ridge_train_predictions <- predict(ridge_model, newx = X_train)
+  ridge_test_predictions  <- predict(ridge_model, newx = X_test)
+  lasso_train_predictions <- predict(lasso_model, newx = X_train)
+  lasso_test_predictions  <- predict(lasso_model, newx = X_test)
+
+  ridge_train_rmse <- sqrt(mean((y_train - ridge_train_predictions)^2, na.rm = TRUE))
+  ridge_test_rmse  <- sqrt(mean((y_test - ridge_test_predictions)^2, na.rm = TRUE))
+  lasso_train_rmse <- sqrt(mean((y_train - lasso_train_predictions)^2, na.rm = TRUE))
+  lasso_test_rmse  <- sqrt(mean((y_test - lasso_test_predictions)^2, na.rm = TRUE))
+
+  cat("Final Predictors Used:", paste(valid_predictors, collapse = ", "), "\n")
+  cat("Ridge Train RMSE:", round(ridge_train_rmse, 2), "\n")
+  cat("Ridge Test RMSE:", round(ridge_test_rmse, 2), "\n")
+  cat("Lasso Train RMSE:", round(lasso_train_rmse, 2), "\n")
+  cat("Lasso Test RMSE:", round(lasso_test_rmse, 2), "\n")
+} else {
+  cat("Error: Not enough valid predictor variables for Ridge/Lasso Regression.\n")
+}
+
+```
+##9.2 Cross-Validated Ridge and Lasso
+
+```{r}
+set.seed(42)
+
+valid_predictors <- c("Budget", "Score")  
+valid_predictors <- valid_predictors[valid_predictors %in% names(train_data)]
+
+if (length(valid_predictors) >= 2) {
+  X_train <- as.matrix(train_data[valid_predictors])
+  X_test  <- as.matrix(test_data[valid_predictors])
+  y_train <- train_data$Revenue
+  y_test  <- test_data$Revenue
+
+  lambdas <- 10^seq(10, -1, length = 1000)
+
+  ridge_cv_model <- cv.glmnet(X_train, y_train, alpha = 0, lambda = lambdas)
+  lasso_cv_model <- cv.glmnet(X_train, y_train, alpha = 1, lambda = lambdas)
+
+  best_lambda_ridge <- ridge_cv_model$lambda.min
+  best_lambda_lasso <- lasso_cv_model$lambda.min
+
+  cat("Best lambda (ridge):", best_lambda_ridge, "\n")
+  cat("Best lambda (lasso):", best_lambda_lasso, "\n")
+
+  ridgetuned_train_predictions <- predict(ridge_cv_model, s = best_lambda_ridge, newx = X_train)
+  ridgetuned_test_predictions  <- predict(ridge_cv_model, s = best_lambda_ridge, newx = X_test)
+  lassotuned_train_predictions <- predict(lasso_cv_model, s = best_lambda_lasso, newx = X_train)
+  lassotuned_test_predictions  <- predict(lasso_cv_model, s = best_lambda_lasso, newx = X_test)
+
+  ridgetuned_train_rmse <- sqrt(mean((y_train - ridgetuned_train_predictions)^2, na.rm = TRUE))
+  ridgetuned_test_rmse  <- sqrt(mean((y_test - ridgetuned_test_predictions)^2, na.rm = TRUE))
+  lassotuned_train_rmse <- sqrt(mean((y_train - lassotuned_train_predictions)^2, na.rm = TRUE))
+  lassotuned_test_rmse  <- sqrt(mean((y_test - lassotuned_test_predictions)^2, na.rm = TRUE))
+
+  cat("Final Predictors Used:", paste(valid_predictors, collapse = ", "), "\n")
+  cat("Ridge (tuned) Train RMSE:", round(ridgetuned_train_rmse, 2), "\n")
+  cat("Ridge (tuned) Test  RMSE:", round(ridgetuned_test_rmse, 2),  "\n")
+  cat("Lasso (tuned) Train RMSE:", round(lassotuned_train_rmse, 2), "\n")
+  cat("Lasso (tuned) Test  RMSE:", round(lassotuned_test_rmse, 2),  "\n")
+
+} else {
+  cat("Error: Not enough valid predictor variables for Ridge/Lasso Regression.\n")
+}
+
+```
+
+##10. Decision Trees and Random Forest
+##10.1 Decision Tree (Model 0: All Features)
+```{r}
+set.seed(1)
+
+valid_features <- c("Budget", "Score", "Vote_Count")
+valid_features <- valid_features[valid_features %in% names(train_data)]
+
+train_data <- na.omit(train_data)
+test_data <- na.omit(test_data)
+if (length(valid_features) > 1) {
+  dt_model0 <- rpart(as.formula(paste("Revenue ~", paste(valid_features, collapse = " + "))),
+                     data = train_data, method = "anova")
+  
+  y_pred <- predict(dt_model0, test_data)
+  cat("DT Model0 RMSE:", RMSE(test_data$Revenue, y_pred), "\n")
+  printcp(dt_model0)
+  rpart.plot(dt_model0)
+  plotcp(dt_model0)
+} else {
+  cat("Error: Not enough valid predictors for Decision Tree Model 0.\n")
+}
+
+```
+
+
