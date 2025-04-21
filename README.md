@@ -13,6 +13,41 @@ In this project we are building a Prediction Model to predict Revenue generated 
 - [Kaggle TMDB movie dataset (2023)](https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies)
 
 
+## Progress
+### 1. Literature Review & Problem Exploration:
+
+Started by reading key research papers to understand existing approaches for movie revenue prediction.
+
+Identified strengths and gaps in prior work, including classification models and multimodal strategies.
+
+### 2. Data Collection & Cleaning:
+
+Downloaded and cleaned datasets from IMDb and The Numbers.
+
+All raw and processed data were organized in the data/ folder.
+
+Conducted cleaning procedures: removing duplicates, filtering invalid rows, and handling missing values.
+
+### 3. Baseline Model Implementation:
+
+Ran and modified an existing revenue prediction notebook (finalmodel.Rmd) to understand model logic and benchmark results.
+
+Evaluated simple linear regression models for early validation.
+
+### 4. Machine Learning Model Development:
+
+Created and refined a custom ML notebook (FinalModel.ipynb) to build models including:
+
+Linear Regression & Elastic Net
+
+Generalized Additive Models (GAM)
+
+XGBoost (final best-performing model)
+
+Implemented preprocessing (log-transformations, PCA, feature selection) and used a time-based 80/20 split.
+
+
+
 
 ## Detailed Problem Statement: 
 
@@ -22,188 +57,73 @@ Movies are a unique combination of artistic expression and commercial ventures. 
 
 By conducting a comprehensive analysis of these features, this research aims to identify patterns, relationships, and correlations that can offer valuable insights into revenue prediction. The findings of this study are expected to have substantial implications for movie production companies, investors, and stakeholders. They can leverage the predictive model developed in this project to make informed decisions regarding their movie investments, marketing strategies, and financial planning, ultimately contributing to the success and profitability of their ventures in the film industry.
 
-## Data Analysis and Findings :
+## Data Cleaning:
+Null Value Handling:
+Removed records with missing or malformed values in critical fields such as release_date, budget, and actor_score. This ensured data integrity and model reliability.
 
-Which feature is highly correlated with revenue?
-Being a regression problem, what is the best metric to evaluate our model?
-Which regression model gives out best results while prediction?
-What is the root mean squared error, r2 and other metrics for predicting the revenue of a movie?
-By using Statistical tests and models learned, we will try to predict the revenue of movie based on independent features.
+Outlier Treatment:
+Applied interquartile range (IQR) capping to numeric variables like budget and popularity to reduce the influence of extreme values without losing valuable data points.
 
-Reference guide for the columns in the dataset:
+Negative Value Removal:
+Dropped observations with invalid negative values in trailer metrics (e.g., trailer views or likes), which are inherently non-negative.
 
-title: Movie or show name
-genres: Content categories or themes
-original_language: Language of the original content
-popularity: Measure of audience interest
-release_date: Date of public availability
-budget: Cost of production
-revenue: Income generated from content
-runtime: Duration of the content
-status: Current release status
-vote_average: Average audience ratings
-vote_count: Number of audience votes 12.trailer_views: Number of trailer views
-trailer_likes: Number of trailer likes
-This lets us identify which features are significant.
+Date Parsing & Filtering:
+Standardized release_date into datetime format and removed records with null or invalid date entries. This allowed chronological sorting for time-based model splitting.
 
-From the glossary, we have these subjective columns which are hard to interpret and use in modelling. So we remove them. - id - overview - production_companies - tagline - credits - keywords - poster_path - backdrop_path - recommendations It is not a good idea to use these features as these are just metadata and do not tell anything about how well movie will perform. This is how our dataset looks now.
 
-### Data Cleaning:
-Inferences:
-
-Budget of Movies are having value 0, which is not possible (Remove rows with budget 0)
-Revenue has negative values which is again not possible (Remove rows with revenue 0 or negative)
-Runtime of Movies are having value 0, which is not possible (Remove rows with runtime 0)
-Check for outliers and influential points in all the columns.
-Runtime had 0.004% missing values.
-These values were dropped as number of missing value is small.
-
-### Data Visulisation:
-
-![image](https://github.com/anandr07/DATS6101-P2-Movie-Revenue-Prediction/assets/66896800/32d693c0-87be-416b-b6bc-4cc9188967a8)
-![image](https://github.com/anandr07/DATS6101-P2-Movie-Revenue-Prediction/assets/66896800/f63e27b7-cbe6-4e81-bdde-4044f0e25328)
-
-Inferences:
-
-Trailer Likes and Trailer views have linear relationship with the Output/Dependent variable “Revenue”.
-
-### Visualization of Correlation Matrix using Heatmap
-
-![image](https://github.com/anandr07/DATS6101-P2-Movie-Revenue-Prediction/assets/66896800/d9c04a24-00cc-407b-b162-023e94861281)
-
-Inferences:
-
-Trailer Likes and Trailer views has high correlation with “Revenue”.
-Vote Count and Budget have moderate correlation with “Revenue”.
-Popularity, Runtime and Average Vote have poor correlation with “Revenue”.
-
-## Feature Engineeering and Feature Selection:
-### Stepwise Forward Feature Selection
-The features given in the final model using forward feature selection are Trailer_Likes, Trailer_Views, Vote_Count, Budget, Runtime ,Avg_Vote , popularity but we can see that the intercept is not significant hence we will build the model again with different combinations of features.
-
-![image](https://github.com/anandr07/DATS6101-P2-Movie-Revenue-Prediction/assets/66896800/6e0399e6-332a-49fe-bcc8-2a4bf35f6276)
-
-Rows 1,96,443,15996 have influence on our overall model and hence removed from the dataset.
 
 ## Model Building:
 
-### Final Linear Regression Model
+#### Baseline Model：Linear Regression
+We began our modeling pipeline with Ordinary Least Squares (OLS) regression as the base model. This approach was selected for its simplicity and interpretability, providing a foundational benchmark for later complex models. Using key predictors such as budget_log, trailer_pca, budget_actor_interaction, and release_year_centered, we evaluated the model under a realistic 80/20 time-based split.
 
-![image](https://github.com/anandr07/DATS6101-P2-Movie-Revenue-Prediction/assets/66896800/8b21b242-b003-44e0-9cc8-dc67dc6bfe6d)
+RMSE: 9.85 million
 
-In the above model we can see that all the input features are significant and we have a good Multiple R-Squared value. The p-value for the model is also significant indicating the model is a significant model. The Residual Std Error is around 3.9 Million which seems a reasonable as we cannot exactly predict the Revenue of a Movie as it depends on various other factors.
+R²: 0.83
 
-Coefficients:
+Residual diagnostics revealed increasing error variance with higher revenue predictions—an indication of heteroskedasticity. Additionally, Q-Q plots showed deviation at the tails, suggesting non-normal error distribution. While the linear model provided a reasonable fit, it lacked the flexibility to capture nonlinear dynamics and interactions—especially for high-revenue outliers. This motivated the exploration of more advanced models.
 
-Intercept: When interpreting from the linear regression model equation the following was noted. The intercept is estimated to be 601,900, which cannot be interpreted directly as each movie will make at least 601,900 dollars as one of the features is budget. Keeping budget 0 we cannot make 601,900 dollars.
 
-Trailer_Likes: The variable “Trailer_Likes” has an estimated coefficient of 2.8 meaning every like on trailer of the movie increases the revenur by 2.8 dollars.
+#### Model1：GAM
+To better model complex relationships in the data, we implemented a Generalized Additive Model (GAM). This semi-parametric approach allows each predictor to have its own smooth function, capturing nonlinear effects while preserving some interpretability.
 
-Trailer_Views: For the variable “Trailer_Views” the estimate is 0.259. This indicates that for every additional view of the movie trailer, the estimated revenue increases by $0.259.
+RMSE: 9.66 million
 
-Vote_count: The estimated coefficient for “Vote_count” is 265.7. This implies that for every additional vote, the estimated revenue increases by $265.7.
+R²: 0.84
 
-Budget: The variable “Budget” has an estimated coefficient of 0.003576. This suggests that for every additional dollar in the movie budget, the estimated revenue increases by $0.003576.
+Partial dependence plots revealed important insights:
 
-Multiple R-squared: The proportion of the variance in the dependent variable (Revenue) that is predictable from the independent variables (Trailer_Views, Trailer_Likes, Vote_Count, Budget). In our case, it’s 94.9%.
+Budget (log) showed a nonlinear relationship with revenue—modest returns at mid-range budgets and sharp increases for high-budget blockbusters.
 
-F-statistic: Tests the overall significance of the model. In our case, it’s 2.415e+04 with a very low p-value, suggesting the model is significant.
+Budget × Actor Interaction exhibited diminishing returns after a threshold, indicating a saturation effect when both budget and star power are high.
 
-The Residual Standard Error has also reduced after removal of influential points.
+Trailer_pca displayed a consistent, strong negative relationship (since it combines log-inverted metrics).
 
-#### Linear Regression assumptions check
-Check of Mullticollinearity
+Release Year showed a downward trend for more recent movies, possibly reflecting pandemic impacts or industry saturation.
 
-All values are below 10 indicating “No” Multicollinearity between features.
+While the performance improvement over OLS was moderate, GAM offered enhanced explanatory power by uncovering feature-specific nonlinearities.
 
-Check for Linear Relationship with the output variable
 
-![image](https://github.com/anandr07/DATS6101-P2-Movie-Revenue-Prediction/assets/66896800/b8ddce91-2bd1-4dbf-a4af-a90fe6bfabe4)
-
-All features in our model seem to have linear relationship with the output variable.
-
-Check for Normality of errors, Equal Variances of residuals and Independence of errors
-
-![image](https://github.com/anandr07/DATS6101-P2-Movie-Revenue-Prediction/assets/66896800/9f761325-2556-49b4-9035-b75d6c275c5b)
-
-![image](https://github.com/anandr07/DATS6101-P2-Movie-Revenue-Prediction/assets/66896800/4293e92e-1440-49c6-9042-35bb99dce134)
-
-![image](https://github.com/anandr07/DATS6101-P2-Movie-Revenue-Prediction/assets/66896800/c7c46297-65bf-42e2-9693-10745c8978a8)
-
-![image](https://github.com/anandr07/DATS6101-P2-Movie-Revenue-Prediction/assets/66896800/7a294213-f278-45ce-ba05-35ba510220e9)
-
-### Ridge and Lasso Regression
-Now let’s try ridge and lasso regression to see how it will be different.
-
-#### Baseline Model
-Firstly the lambda was set as 1. The results of ridge regression and lasso regression are as follows:
-
-Ridge Regression:
-Coefs:
-Intercept, Popularity, Budget, Runtime, Avg_Vote, Vote_Count, Trailer_Views, Trailer_Likes
-7.93^{4}, 1326.414, 0.006, 6035.994, 8.819^{4}, 523.23, 0.36, 2.426
-RMSE: 4.969^{6}
-R-squared: 0.908
-
-Lasso Regression:
-Coefs:
-Intercept, Popularity, Budget, Runtime, Avg_Vote, Vote_Count, Trailer_Views, Trailer_Likes
-7.93^{4}, 1326.408, 0.006, 6035.975, 8.819^{4}, 523.23, 0.36, 2.426
-RMSE: 4.969^{6}
-R-squared: 0.908
-
-#### Model1
-Then, lambda was assigned a series of values between 0.1 and ten squares, and cross-validation was used to determine the optimal lambda value.
-
-Ridge Regression:
-Best lambda: 0.1
-Coeffs:
-Intercept, Popularity, Budget, Runtime, Avg_Vote, Vote_Count, Trailer_Views, Trailer_Likes
-7.963^{4}, 1326.651, 0.006, 6037.017, 8.812^{4}, 523.451, 0.36, 2.426
-RMSE: 4.969^{6}
-R-squared: 0.908
-
-Lasso Regression:
-Best lambda: 3.941^{5}
-Coeffs:
-Intercept, Popularity, Budget, Runtime, Avg_Vote, Vote_Count, Trailer_Views, Trailer_Likes
-1.512^{6}, 0, 0.002, 0, 0, 481.064, 0.334, 2.423
-RMSE: 5.017^{6}
-R-squared: 0.906
 
 #### Model2
-Finally, let’s use different value ranges to determine the optimal lambda values of ridge regression and lasso regression respectively, since their optimal lambda values are so different.
+Our primary predictive model is XGBoost, selected for its ability to model high-dimensional, nonlinear relationships with built-in regularization and efficiency. The model was trained on log-transformed revenue values, using a time-based 80/20 split (1914–2015 train, 2016–2023 test) and hyperparameters tuned via RandomizedSearchCV.
 
-Ridge Regression:
-Best lambda: 9.908
-Coeffs:
-Intercept, Popularity, Budget, Runtime, Avg_Vote, Vote_Count, Trailer_Views, Trailer_Likes
-7.962^{4}, 1326.65, 0.006, 6037.013, 8.812^{4}, 523.448, 0.36, 2.426
-RMSE: 4.969^{6}
-R-squared: 0.908
+RMSE: 9.69 million
 
-Lasso Regression:
-Best lambda: 4.014^{5}
-Coeffs:
-Intercept, Popularity, Budget, Runtime, Avg_Vote, Vote_Count, Trailer_Views, Trailer_Likes
-1.518^{6}, 0, 0.002, 0, 0, 479.69, 0.333, 2.423
-RMSE: 5.019^{6}
-R-squared: 0.906
+R²: 0.8475
 
-We can see that the lasso regression does change the coefficients of some features to zero. And surprisingly, this is just the same result as the stepwise forward feature selection.
+The model demonstrated:
+
+Strong predictive performance with low error and tight actual vs. predicted clustering.
+
+Minimal data leakage due to strict chronological split.
+
+Robust feature ranking, with trailer_likes_log, budget_log, and release_year_centered emerging as top contributors.
+
+Visual inspection of prediction error over time revealed consistent performance across years, although several extreme outliers (e.g., Avengers: Endgame) were underestimated—highlighting the potential for future work with weighted loss functions or specialized outlier models.
+
 
 
 ## Results and Conclusions:
-The project aimed to address the complex and dynamic nature of the movie industry by developing a regression model to estimate movie revenue. The data analysis and model building process involved exploratory data analysis, data cleaning, and feature selection.
 
-The project addressed SMART questions, identified influential points, and conducted rigorous statistical tests. After feature selection and model building the best R^2 value achieved was 0.92 with the features Trailer Views, Trailer Likes, Vote Count, Budget
-
-The linear regression model, after thorough feature selection, highlighted the significance of Trailer_Likes, Trailer_Views, Vote_Count, and Budget in predicting movie revenue. The model achieved a Multiple R-squared value of 94.9%, indicating its strong explanatory power.
-
-The results of ridge and lasso regression were slightly worse than linear regression, but the results of lasso regression verified the correctness of stepwise forward feature selection.
-
-The project successfully navigated the complexities of movie revenue estimation, leveraging advanced statistical models to provide actionable insights for stakeholders in the movie production business.
-
-The combination of linear regression, decision tree regression, and random forest regression offered a comprehensive understanding of the factors influencing movie revenue and paved the way for informed decision support in the industry with an average RMSE of 3.5 million dollars. Undoubtedly, the linear regression model performs better than trees.
-
-The model can be improved using boosting methods (Ensemble Methods) to get a better performance.
+The model can be improved using xgboost methods to get a better performance.
